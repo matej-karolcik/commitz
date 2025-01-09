@@ -4,6 +4,7 @@ import (
 	"commitz/internal/generate"
 	"commitz/internal/vcs"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/charmbracelet/huh"
 	"github.com/tmc/langchaingo/llms/ollama"
@@ -31,7 +32,7 @@ func run() error {
 	}
 
 	if diff == "" {
-		return nil
+		return errors.New("no changes to commit")
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

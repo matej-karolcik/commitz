@@ -17,7 +17,7 @@ func Commit(
 		ctx,
 		[]llms.MessageContent{
 			llms.TextParts(llms.ChatMessageTypeSystem, promptCommitMessage),
-			llms.TextParts(llms.ChatMessageTypeHuman, "here is the diff: "+diff),
+			llms.TextParts(llms.ChatMessageTypeHuman, diff),
 		},
 	)
 	if err != nil {

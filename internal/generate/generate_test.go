@@ -10,7 +10,7 @@ import (
 )
 
 func TestGenerate(t *testing.T) {
-	diff, err := os.ReadFile("diff.txt")
+	diff, err := os.ReadFile("bigdiff.txt")
 	assert.NoError(t, err)
 
 	llm, err := ollama.New(ollama.WithModel("llama3.2"))

@@ -14,7 +14,12 @@ type VCS interface {
 type git struct{}
 
 func (g *git) Diff() (string, error) {
-	cmd := exec.Command("git", "diff", "--cached")
+	cmd := exec.Command("git", "add", "-u")
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("running git add: %w", err)
+	}
+
+	cmd = exec.Command("git", "diff", "--cached")
 
 	output, err := cmd.Output()
 	if err != nil {

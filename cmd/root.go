@@ -6,13 +6,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/charmbracelet/huh"
 	"github.com/ollama/ollama/api"
 	"github.com/tmc/langchaingo/llms/ollama"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
@@ -83,14 +83,19 @@ func run(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("generating commit message: %w", err)
 	}
 
-	commitMsg = prefix + " " + commitMsg
+	if prefix != "" {
+		commitMsg = prefix + " " + commitMsg
+	}
 
-	var proceed bool
-	if err = huh.NewConfirm().
-		Title("Press enter to commit with this message:\n\n" + commitMsg + "\n").
-		Value(&proceed).
-		WithTheme(huh.ThemeBase()).
-		Run(); err != nil || !proceed {
+	fmt.Println(commitMsg)
+
+	prompt := promptui.Prompt{
+		Label:     "Commit with this message?",
+		Default:   commitMsg,
+		IsConfirm: true,
+	}
+
+	if _, err = prompt.Run(); err != nil {
 		return nil
 	}
 

@@ -27,8 +27,8 @@ func Commit(
 	response, err := llm.GenerateContent(
 		ctx,
 		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeHuman, prompt+diff),
-			//llms.TextParts(llms.ChatMessageTypeHuman, diff),
+			llms.TextParts(llms.ChatMessageTypeHuman, prompt),
+			llms.TextParts(llms.ChatMessageTypeHuman, diff),
 		},
 	)
 	if err != nil {

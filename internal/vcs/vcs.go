@@ -11,7 +11,6 @@ type VCS interface {
 	Commit(message string) error
 }
 
-// todo use go-git
 type git struct{}
 
 func (g *git) Diff() (string, error) {

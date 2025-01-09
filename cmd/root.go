@@ -35,7 +35,7 @@ var rootCmd = &cobra.Command{
 	RunE:  run,
 }
 
-func run(cmd *cobra.Command, args []string) error {
+func run(_ *cobra.Command, args []string) error {
 	var prefix string
 	if len(args) > 0 {
 		prefix = args[0]

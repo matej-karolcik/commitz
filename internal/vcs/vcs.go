@@ -2,6 +2,7 @@ package vcs
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 )
 
@@ -31,6 +32,9 @@ func (g *git) Diff() (string, error) {
 
 func (g *git) Commit(message string) error {
 	cmd := exec.Command("git", "commit", "-am", message)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("running git commit: %w", err)

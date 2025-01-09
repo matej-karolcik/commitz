@@ -5,6 +5,7 @@ import (
 	"commitz/internal/vcs"
 	"context"
 	"fmt"
+	"github.com/charmbracelet/huh"
 	"github.com/tmc/langchaingo/llms/ollama"
 	"os"
 	"os/signal"
@@ -29,6 +30,10 @@ func run() error {
 		return fmt.Errorf("getting diff: %w", err)
 	}
 
+	if diff == "" {
+		return nil
+	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
@@ -41,7 +46,18 @@ func run() error {
 		return fmt.Errorf("generating commit message: %w", err)
 	}
 
-	fmt.Printf("git commit -am\"%s\"\n", commitMsg)
+	var proceed bool
+	if err = huh.NewConfirm().
+		Title("Press enter to commit with this message:\n\n" + commitMsg + "\n").
+		Value(&proceed).
+		WithTheme(huh.ThemeBase()).
+		Run(); err != nil || !proceed {
+		return nil
+	}
+
+	if err = vcs.NewGit().Commit(commitMsg); err != nil {
+		return fmt.Errorf("committing: %w", err)
+	}
 
 	return nil
 }

@@ -7,8 +7,10 @@ import (
 
 type VCS interface {
 	Diff() (string, error)
+	Commit(message string) error
 }
 
+// todo use go-git
 type git struct{}
 
 func (g *git) Diff() (string, error) {
@@ -20,6 +22,16 @@ func (g *git) Diff() (string, error) {
 	}
 
 	return string(output), nil
+}
+
+func (g *git) Commit(message string) error {
+	cmd := exec.Command("git", "commit", "-am", message)
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("running git commit: %w", err)
+	}
+
+	return nil
 }
 
 func NewGit() VCS {

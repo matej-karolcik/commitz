@@ -6,7 +6,7 @@ import (
 	"github.com/tmc/langchaingo/llms"
 )
 
-const promptCommitMessage = `You are an assistant to write a commit message. The user will send you the content of the commit diff, and you will reply with a concise, single-line commit message without any explanation.`
+const promptCommitMessage = "Write a single-line commit message given the `git diff` output."
 
 func Commit(
 	ctx context.Context,
@@ -17,7 +17,7 @@ func Commit(
 		ctx,
 		[]llms.MessageContent{
 			llms.TextParts(llms.ChatMessageTypeSystem, promptCommitMessage),
-			llms.TextParts(llms.ChatMessageTypeHuman, diff),
+			llms.TextParts(llms.ChatMessageTypeHuman, "here is the diff: "+diff),
 		},
 	)
 	if err != nil {

@@ -1,0 +1,131 @@
+diff --git a/src/Command/Image/CheckImageContentCommand.php b/src/Command/Image/CheckImageContentCommand.php
+index 43a3d637a9fa..18c987fde89a 100644
+--- a/src/Command/Image/CheckImageContentCommand.php
++++ b/src/Command/Image/CheckImageContentCommand.php
+@@ -9,6 +9,7 @@ use AppMyposter\Module\Command\RunCommandAsyncAction;
+ use AppMyposter\Module\Image\Action\CheckImageContentAction;
+ use AppMyposter\Module\Image\Dto\CreateImageDto;
+ use AppMyposter\Module\Image\Exception\DisallowedImageContentException;
++use Myposter\Console\NumericArguments;
+ use Myposter\Model\Entity\Collage\CollageImageAsset;
+ use Myposter\Model\Entity\Image;
+ use Myposter\Model\Repository\Collage\RepositoryCollageImageAsset;
+@@ -19,12 +20,15 @@ use Spl\Storage\Filesystem;
+ use Symfony\Component\Console\Attribute\AsCommand;
+ use Symfony\Component\Console\Input\InputArgument;
+ use Symfony\Component\Console\Input\InputInterface;
++use Symfony\Component\Console\Input\InputOption;
+ use Symfony\Component\Console\Output\OutputInterface;
+ 
+ #[AsCommand(name: self::NAME)]
+ class CheckImageContentCommand extends AbstractCommand
+ {
+-	public const string NAME = 'image:check-content';
++	public const string  NAME = 'image:check-content';
++
++	private const string IMAGE_IDS = 'imageIds';
+ 
+ 	public function __construct(
+ 		private readonly RepositoryImage $repositoryImage,
+@@ -43,35 +47,57 @@ class CheckImageContentCommand extends AbstractCommand
+ 
+ 		$this
+ 			->addArgument(
+-				'imageId',
+-				InputArgument::OPTIONAL,
++				self::IMAGE_IDS,
++				InputArgument::OPTIONAL | InputArgument::IS_ARRAY,
+ 				'Image ID',
++			)
++			->addOption(
++				'remote',
++				'r',
++				InputOption::VALUE_NONE,
++				'use remote strategy, default if no imageIds are provided',
+ 			);
+ 	}
+ 
+ 	protected function execute(InputInterface $input, OutputInterface $output): int
+ 	{
+-		$imageId = $input->getArgument('imageId');
++		$imageIds = NumericArguments::fromInput($input, self::IMAGE_IDS)->getAll();
++
++		if ($imageIds === []) {
++			$imageIds = $this->repositoryImage->getAssetImageIds();
+ 
+-		if ($imageId === null) {
+-			$this->publishMessages($output);
++			$this->publishMessages($imageIds, $output);
+ 
+ 			return self::SUCCESS;
+ 		}
+ 
+-		$imageId = (int) $imageId;
+-		$image   = $this->repositoryImage->getImageById($imageId);
+-		if ($image === null) {
++		if ($input->getOption('remote') === true) {
++			$this->publishMessages($imageIds, $output);
++
+ 			return self::SUCCESS;
+ 		}
+ 
++		foreach ($imageIds as $imageId) {
++			$this->checkSingle($imageId, $output);
++		}
++
++		return self::SUCCESS;
++	}
++
++	private function checkSingle(int $imageId, OutputInterface $output): void
++	{
++		$image = $this->repositoryImage->getImageById($imageId);
++		if ($image === null) {
++			return;
++		}
++
+ 		if ($image->getSourceType() !== Image::SOURCE_TYPE_ASSET) {
+-			return self::SUCCESS;
++			return;
+ 		}
+ 
+ 		$collageImageAssets = $this->repositoryCollageImageAsset->findAssetsByImageId($imageId);
+ 		if ($collageImageAssets === []) {
+-			return self::SUCCESS;
++			return;
+ 		}
+ 
+ 		$dto                  = new CreateImageDto();
+@@ -86,7 +112,7 @@ class CheckImageContentCommand extends AbstractCommand
+ 			);
+ 		} catch (DisallowedImageContentException $e) {
+ 			$this->logger->error(
+-				self::NAME . ' disallowed image content',
++				'[' . self::NAME . '] disallowed image content',
+ 				[
+ 					'imageUrl'   => $this->filesystemImage->getPublicUri(
+ 						$image->getFilePathBase(
+@@ -104,22 +130,16 @@ class CheckImageContentCommand extends AbstractCommand
+ 			);
+ 		} catch (\Throwable $e) {
+ 			$output->writeln($e->getMessage());
+-
+-			return self::FAILURE;
+ 		}
+-
+-		return self::SUCCESS;
+ 	}
+ 
+-	private function publishMessages(OutputInterface $output): void
++	private function publishMessages(array $imageIds, OutputInterface $output): void
+ 	{
+-		$imageIds = $this->repositoryImage->getAssetImageIds();
+-
+ 		foreach ($imageIds as $imageId) {
+ 			$this->runCommandAsyncAction->do(
+ 				self::NAME,
+ 				[
+-					'imageId' => $imageId,
++					self::IMAGE_IDS => $imageId,
+ 				],
+ 				$output,
+ 			);

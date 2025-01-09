@@ -16,7 +16,7 @@ const prompt = `You are a Git commit message generator. Given the following Git 
 - Use bullet points for multiple changes if necessary.
 - Tone: Keep it professional and clear.
 
-Here is the git diff: 
+Here is the git diff:
 `
 
 func Commit(

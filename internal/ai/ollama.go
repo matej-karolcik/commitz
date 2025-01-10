@@ -42,7 +42,7 @@ func (o *ollama) CommitMessage(
 	response, err := o.ask(
 		ctx,
 		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeHuman, commitPrompt),
+			llms.TextParts(llms.ChatMessageTypeSystem, commitPrompt),
 			llms.TextParts(llms.ChatMessageTypeHuman, diff),
 		},
 	)
@@ -94,7 +94,7 @@ func (o *ollama) summarizeFile(
 	response, err := o.ask(
 		ctx,
 		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeHuman, summarizeFilePrompt),
+			llms.TextParts(llms.ChatMessageTypeSystem, summarizeFilePrompt),
 			llms.TextParts(llms.ChatMessageTypeHuman, fmt.Sprintf("Filename: %s\nContent: %s\n\n", filename, content)),
 		},
 	)
@@ -106,10 +106,7 @@ func (o *ollama) summarizeFile(
 }
 
 func (o *ollama) ask(ctx context.Context, prompts []llms.MessageContent) (string, error) {
-	response, err := o.backend.GenerateContent(
-		ctx,
-		prompts,
-	)
+	response, err := o.backend.GenerateContent(ctx, prompts)
 	if err != nil {
 		return "", fmt.Errorf("generating content: %w", err)
 	}

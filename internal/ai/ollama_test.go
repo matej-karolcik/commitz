@@ -16,9 +16,8 @@ func TestGenerate(t *testing.T) {
 	llm, err := ollama.New(ollama.WithModel("llama3.2"))
 	assert.NoError(t, err)
 
-	commitMsg, err := ai.CommitMessage(
+	commitMsg, err := ai.NewOllama(llm).CommitMessage(
 		context.Background(),
-		llm,
 		string(diff),
 	)
 	assert.NoError(t, err)

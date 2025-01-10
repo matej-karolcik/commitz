@@ -1,8 +1,8 @@
 package generate_test
 
 import (
-	"commitz/internal/generate"
 	"context"
+	"github.com/matej-karolcik/commitz/internal/generate"
 	"github.com/stretchr/testify/assert"
 	"github.com/tmc/langchaingo/llms/ollama"
 	"os"

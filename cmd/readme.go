@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"commitz/internal/generate"
 	"context"
 	"fmt"
+	"github.com/matej-karolcik/commitz/internal/generate"
 	"io/fs"
 	"os"
 	"path/filepath"

@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"commitz/internal/generate"
-	"commitz/internal/vcs"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/matej-karolcik/commitz/internal/generate"
+	"github.com/matej-karolcik/commitz/internal/vcs"
 	"github.com/ollama/ollama/api"
 	"github.com/tmc/langchaingo/llms/ollama"
 	"os"

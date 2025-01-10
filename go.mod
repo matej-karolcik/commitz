@@ -1,4 +1,4 @@
-module commitz
+module github.com/matej-karolcik/commitz
 
 go 1.23.4
 

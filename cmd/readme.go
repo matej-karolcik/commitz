@@ -4,9 +4,12 @@ import (
 	"commitz/internal/generate"
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/gobwas/glob"
 	"github.com/spf13/cobra"
 	"github.com/tmc/langchaingo/llms/ollama"
 )
@@ -24,24 +27,62 @@ func runReadme(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	files, err := os.ReadDir(wd)
-	if err != nil {
-		return fmt.Errorf("failed to read directory: %w", err)
+	fmt.Printf("looking in %s\n", wd)
+
+	var excludes []glob.Glob
+	gitignore, err := os.ReadFile(filepath.Join(wd, ".gitignore"))
+	if err == nil {
+		lines := strings.Split(string(gitignore), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+
+			if line == "" {
+				continue
+			}
+
+			if strings.HasPrefix(line, "#") {
+				continue
+			}
+
+			g, err := glob.Compile(line)
+			if err != nil {
+				continue
+			}
+
+			excludes = append(excludes, g)
+		}
 	}
 
 	filemap := make(map[string]string)
 
-	for _, file := range files {
-		if file.IsDir() {
-			continue
+	if err = filepath.WalkDir(wd, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
 
-		content, err := os.ReadFile(filepath.Join(wd, file.Name()))
+		if d.IsDir() {
+			return nil
+		}
+
+		for _, exclude := range excludes {
+			if exclude.Match(d.Name()) {
+				fmt.Printf("excluded: %s\n", d.Name())
+				return nil
+			}
+		}
+
+		content, err := os.ReadFile(path)
 		if err != nil {
 			return fmt.Errorf("failed to read file: %w", err)
 		}
 
-		filemap[file.Name()] = string(content)
+		fmt.Printf("read %s\n", path)
+
+		filemap[path] = string(content)
+
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to walk directory: %w", err)
 	}
 
 	llm, err := ollama.New(ollama.WithModel("llama3.2"))
@@ -53,6 +94,8 @@ func runReadme(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to generate readme: %w", err)
 	}
+
+	fmt.Println(readme)
 
 	readmeFile, err := os.Create(filepath.Join(wd, "readme.md"))
 	if err != nil {

@@ -21,18 +21,7 @@ const prompt = `You are a Git commit message generator. Given the following Git 
 Here is the git diff:
 `
 
-const readmePrompt = `You are a README generator. Given the following files, create a README file that summarizes the changes made.
-
-- Provide a short summary of the changes in the first line (ideally under 50 characters).
-- Ideally there is only the first line.
-- Do not explain the 'why' behind these changes.
-- Do not show any code.
-- Use bullet points for multiple changes if necessary.
-- Tone: Keep it professional and clear.
-
-Here are the files:
-%s
-`
+const readmePrompt = `You are a README generator. Given the following files and their contents, create a README file that summarizes the project.`
 
 func Commit(
 	ctx context.Context,
@@ -65,8 +54,10 @@ func Readme(
 	var builder strings.Builder
 
 	for file, content := range filemap {
-		builder.WriteString(fmt.Sprintf("%s:\n%s\n", file, content))
+		builder.WriteString(fmt.Sprintf("\n\n// File: %s\n%s", file, content))
 	}
+
+	fmt.Printf("len: %d\n", len(builder.String()))
 
 	response, err := llm.GenerateContent(
 		ctx,

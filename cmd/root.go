@@ -16,10 +16,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	//rootCmd.AddCommand(readmeCmd)
-}
-
 var rootCmd = &cobra.Command{
 	Use:   "commitz",
 	Short: "A brief description of your application",

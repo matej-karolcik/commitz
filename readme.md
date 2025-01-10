@@ -10,7 +10,7 @@ To use commitz, you need to have Go installed on your system. You can download t
 
 Once you have Go installed, run the following command:
 ```bash
-go install github.com/matej-karolcik/commitz/cmd
+go install github.com/matej-karolcik/commitz@latest
 ```
 This will install commitz and its dependencies.
 

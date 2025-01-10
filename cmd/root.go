@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/matej-karolcik/commitz/internal/generate"
+	"github.com/matej-karolcik/commitz/internal/ai"
 	"github.com/matej-karolcik/commitz/internal/vcs"
 	"github.com/ollama/ollama/api"
 	"github.com/tmc/langchaingo/llms/ollama"
@@ -69,9 +69,8 @@ func run(_ *cobra.Command, args []string) error {
 		return errors.New("no changes to commit")
 	}
 
-	commitMsg, err := generate.Commit(
+	commitMsg, err := ai.NewOllama(llm).CommitMessage(
 		ctx,
-		llm,
 		diff,
 	)
 	if err != nil {
@@ -86,7 +85,7 @@ func run(_ *cobra.Command, args []string) error {
 
 	prompt := promptui.Prompt{
 		Label:     "Commit with this message?",
-		Default:   commitMsg,
+		Default:   "y",
 		IsConfirm: true,
 	}
 

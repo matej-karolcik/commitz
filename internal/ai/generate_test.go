@@ -1,8 +1,8 @@
-package generate_test
+package ai_test
 
 import (
 	"context"
-	"github.com/matej-karolcik/commitz/internal/generate"
+	"github.com/matej-karolcik/commitz/internal/ai"
 	"github.com/stretchr/testify/assert"
 	"github.com/tmc/langchaingo/llms/ollama"
 	"os"
@@ -16,7 +16,7 @@ func TestGenerate(t *testing.T) {
 	llm, err := ollama.New(ollama.WithModel("llama3.2"))
 	assert.NoError(t, err)
 
-	commitMsg, err := generate.Commit(
+	commitMsg, err := ai.CommitMessage(
 		context.Background(),
 		llm,
 		string(diff),

@@ -1,4 +1,4 @@
-package generate
+package ai
 
 import (
 	"context"
@@ -9,7 +9,8 @@ import (
 	"github.com/tmc/langchaingo/llms"
 )
 
-const prompt = `You are a Git commit message generator. Given the following Git diff, create a meaningful commit message that summarizes the changes made.
+const (
+	commitPrompt = `You are a Git commit message generator. Given the following Git diff, create a meaningful commit message that summarizes the changes made.
 
 - Provide a short summary of the changes in the first line (ideally under 50 characters).
 - Ideally there is only the first line.
@@ -20,20 +21,28 @@ const prompt = `You are a Git commit message generator. Given the following Git 
 
 Here is the git diff:
 `
+	summarizeFilePrompt  = "Summarize this file, the summary should be used to generate a readme in another prompt. Do not provide any comments or ask any questions. The summary should be short and it should state what the file does."
+	generateReadmePrompt = "Can you generate a readme.md from this list of file summaries?"
+)
 
-const readmePrompt = `You are a README generator. Given the following files and their contents, create a README file that summarizes the project.`
-const readmePrompt2 = `You are a README generator. Given the following files and their summaries, create a README file that summarizes the project.`
+type ollama struct {
+	backend llms.Model
+}
 
-func Commit(
+func NewOllama(backend llms.Model) AI {
+	return &ollama{
+		backend: backend,
+	}
+}
+
+func (o *ollama) CommitMessage(
 	ctx context.Context,
-	llm llms.Model,
 	diff string,
 ) (string, error) {
-	response, err := ask(
+	response, err := o.ask(
 		ctx,
-		llm,
 		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeHuman, prompt),
+			llms.TextParts(llms.ChatMessageTypeHuman, commitPrompt),
 			llms.TextParts(llms.ChatMessageTypeHuman, diff),
 		},
 	)
@@ -44,16 +53,15 @@ func Commit(
 	return response, nil
 }
 
-func Readme(
+func (o *ollama) ReadmeFile(
 	ctx context.Context,
-	llm llms.Model,
 	filemap map[string]string,
 ) (string, error) {
 	var builder strings.Builder
 
 	summaries := make(map[string]string, len(filemap))
 	for file, content := range filemap {
-		summary, err := summarizeFile(ctx, llm, file, content)
+		summary, err := o.summarizeFile(ctx, file, content)
 		if err != nil {
 			return "", fmt.Errorf("summarizing file: %w", err)
 		}
@@ -65,11 +73,10 @@ func Readme(
 		builder.WriteString(fmt.Sprintf("\n\n// File: %s\n%s", file, summary))
 	}
 
-	response, err := ask(
+	response, err := o.ask(
 		ctx,
-		llm,
 		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeSystem, "Can you generate a readme.md from this list of file summaries?"),
+			llms.TextParts(llms.ChatMessageTypeSystem, generateReadmePrompt),
 			llms.TextParts(llms.ChatMessageTypeHuman, builder.String()),
 		},
 	)
@@ -80,16 +87,14 @@ func Readme(
 	return response, nil
 }
 
-func summarizeFile(
+func (o *ollama) summarizeFile(
 	ctx context.Context,
-	llm llms.Model,
 	filename, content string,
 ) (string, error) {
-	response, err := ask(
+	response, err := o.ask(
 		ctx,
-		llm,
 		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeHuman, "Summarize this file, the summary should be used to generate a readme in another prompt. Do not provide any comments or ask any questions. The summary should be short and it should state what the file does."),
+			llms.TextParts(llms.ChatMessageTypeHuman, summarizeFilePrompt),
 			llms.TextParts(llms.ChatMessageTypeHuman, fmt.Sprintf("Filename: %s\nContent: %s\n\n", filename, content)),
 		},
 	)
@@ -100,8 +105,8 @@ func summarizeFile(
 	return response, nil
 }
 
-func ask(ctx context.Context, llm llms.Model, prompts []llms.MessageContent) (string, error) {
-	response, err := llm.GenerateContent(
+func (o *ollama) ask(ctx context.Context, prompts []llms.MessageContent) (string, error) {
+	response, err := o.backend.GenerateContent(
 		ctx,
 		prompts,
 	)

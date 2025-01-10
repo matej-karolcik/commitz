@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/matej-karolcik/commitz/internal/generate"
+	"github.com/matej-karolcik/commitz/internal/ai"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -94,7 +94,7 @@ func runReadme(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to create llm: %w", err)
 	}
 
-	readme, err := generate.Readme(context.Background(), llm, filemap)
+	readme, err := ai.NewOllama(llm).ReadmeFile(context.Background(), filemap)
 	if err != nil {
 		return fmt.Errorf("failed to generate readme: %w", err)
 	}

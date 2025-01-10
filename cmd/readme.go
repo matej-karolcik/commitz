@@ -27,8 +27,6 @@ func runReadme(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	fmt.Printf("looking in %s\n", wd)
-
 	var excludes []glob.Glob
 	gitignore, err := os.ReadFile(filepath.Join(wd, ".gitignore"))
 	if err == nil {

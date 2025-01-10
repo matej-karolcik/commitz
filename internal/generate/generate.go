@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/tmc/langchaingo/llms"
@@ -59,15 +58,12 @@ func Readme(
 			return "", fmt.Errorf("summarizing file: %w", err)
 		}
 
-		fmt.Printf("summarized file '%s': %s\n", file, summary)
 		summaries[file] = summary
 	}
 
 	for file, summary := range summaries {
 		builder.WriteString(fmt.Sprintf("\n\n// File: %s\n%s", file, summary))
 	}
-
-	os.WriteFile("summaries.txt", []byte(builder.String()), 0644)
 
 	response, err := ask(
 		ctx,

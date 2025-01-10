@@ -64,6 +64,14 @@ func runReadme(_ *cobra.Command, _ []string) error {
 			return nil
 		}
 
+		if strings.Contains(path, ".idea") {
+			return nil
+		}
+
+		if strings.Contains(path, ".git") {
+			return nil
+		}
+
 		for _, exclude := range excludes {
 			if exclude.Match(d.Name()) {
 				fmt.Printf("excluded: %s\n", d.Name())
@@ -75,8 +83,6 @@ func runReadme(_ *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to read file: %w", err)
 		}
-
-		fmt.Printf("read %s\n", path)
 
 		filemap[path] = string(content)
 
@@ -94,8 +100,6 @@ func runReadme(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to generate readme: %w", err)
 	}
-
-	fmt.Println(readme)
 
 	readmeFile, err := os.Create(filepath.Join(wd, "readme.md"))
 	if err != nil {

@@ -17,14 +17,21 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(readmeCmd)
+	//rootCmd.AddCommand(readmeCmd)
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "commitz",
 	Short: "A brief description of your application",
 	Long:  ``,
-	RunE:  run,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			if args[0] == "readme" {
+				return readmeCmd.RunE(cmd, args[1:])
+			}
+		}
+		return run(cmd, args)
+	},
 }
 
 func run(_ *cobra.Command, args []string) error {

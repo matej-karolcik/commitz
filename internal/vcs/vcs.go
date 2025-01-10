@@ -11,6 +11,8 @@ type VCS interface {
 	Commit(message string) error
 }
 
+var _ VCS = (*git)(nil)
+
 type git struct{}
 
 func (g *git) Diff() (string, error) {

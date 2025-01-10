@@ -21,9 +21,12 @@ const (
 
 Here is the git diff:
 `
+
 	summarizeFilePrompt  = "Summarize this file, the summary should be used to generate a readme in another prompt. Do not provide any comments or ask any questions. The summary should be short and it should state what the file does."
 	generateReadmePrompt = "Can you generate a readme.md from this list of file summaries?"
 )
+
+var _ AI = (*ollama)(nil)
 
 type ollama struct {
 	backend llms.Model
@@ -42,9 +45,11 @@ func (o *ollama) CommitMessage(
 	response, err := o.ask(
 		ctx,
 		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeSystem, commitPrompt),
+			llms.TextParts(llms.ChatMessageTypeSystem, "Generate a concise one-line git commit message from the following `git diff` output. The message should not exceed 20 words and must not include any feedback, suggestions, or code snippets:"),
 			llms.TextParts(llms.ChatMessageTypeHuman, diff),
 		},
+		llms.WithTemperature(0.5),
+		llms.WithMaxLength(20),
 	)
 	if err != nil {
 		return "", fmt.Errorf("generating content: %w", err)
@@ -105,8 +110,12 @@ func (o *ollama) summarizeFile(
 	return response, nil
 }
 
-func (o *ollama) ask(ctx context.Context, prompts []llms.MessageContent) (string, error) {
-	response, err := o.backend.GenerateContent(ctx, prompts)
+func (o *ollama) ask(
+	ctx context.Context,
+	prompts []llms.MessageContent,
+	callOptions ...llms.CallOption,
+) (string, error) {
+	response, err := o.backend.GenerateContent(ctx, prompts, callOptions...)
 	if err != nil {
 		return "", fmt.Errorf("generating content: %w", err)
 	}

@@ -27,66 +27,11 @@ func runReadme(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	var excludes []glob.Glob
-	gitignore, err := os.ReadFile(filepath.Join(wd, ".gitignore"))
-	if err == nil {
-		lines := strings.Split(string(gitignore), "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
+	excludes, err := collectExcludes(wd)
 
-			if line == "" {
-				continue
-			}
-
-			if strings.HasPrefix(line, "#") {
-				continue
-			}
-
-			g, err := glob.Compile(line)
-			if err != nil {
-				continue
-			}
-
-			excludes = append(excludes, g)
-		}
-	}
-
-	filemap := make(map[string]string)
-
-	if err = filepath.WalkDir(wd, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() {
-			return nil
-		}
-
-		if strings.Contains(path, ".idea") {
-			return nil
-		}
-
-		if strings.Contains(path, ".git") {
-			return nil
-		}
-
-		for _, exclude := range excludes {
-			if exclude.Match(d.Name()) {
-				fmt.Printf("excluded: %s\n", d.Name())
-				return nil
-			}
-		}
-
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("failed to read file: %w", err)
-		}
-
-		filemap[path] = string(content)
-
-		return nil
-	}); err != nil {
-		return fmt.Errorf("failed to walk directory: %w", err)
+	filemap, err := collectFiles(wd, excludes)
+	if err != nil {
+		return fmt.Errorf("failed to collect files: %w", err)
 	}
 
 	llm, err := ollama.New(ollama.WithModel("llama3.2"))
@@ -109,4 +54,79 @@ func runReadme(_ *cobra.Command, _ []string) error {
 	}
 
 	return nil
+}
+
+func collectFiles(
+	workingDirectory string,
+	excludes []glob.Glob,
+) (map[string]string, error) {
+	filemap := make(map[string]string)
+
+	if err := filepath.WalkDir(workingDirectory, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		if strings.Contains(path, ".idea") {
+			return nil
+		}
+
+		if strings.Contains(path, ".git/") {
+			return nil
+		}
+
+		for _, exclude := range excludes {
+			if exclude.Match(strings.TrimLeft(d.Name(), workingDirectory+"/")) {
+				fmt.Printf("excluded: %s\n", d.Name())
+				return nil
+			}
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read file: %w", err)
+		}
+
+		filemap[path] = string(content)
+
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("failed to walk directory: %w", err)
+	}
+
+	return filemap, nil
+}
+
+func collectExcludes(workingDirectory string) ([]glob.Glob, error) {
+	gitignore, err := os.ReadFile(filepath.Join(workingDirectory, ".gitignore"))
+	if err != nil {
+		return nil, nil
+	}
+
+	var excludes []glob.Glob
+	lines := strings.Split(string(gitignore), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		if line == "" {
+			continue
+		}
+
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		g, err := glob.Compile(line)
+		if err != nil {
+			continue
+		}
+
+		excludes = append(excludes, g)
+	}
+
+	return excludes, nil
 }

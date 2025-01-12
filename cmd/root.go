@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/matej-karolcik/commitz/internal/ai"
-	"github.com/matej-karolcik/commitz/internal/vcs"
-	"github.com/ollama/ollama/api"
-	"github.com/tmc/langchaingo/llms/ollama"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/matej-karolcik/commitz/internal/ai"
+	"github.com/matej-karolcik/commitz/internal/config"
+	"github.com/matej-karolcik/commitz/internal/vcs"
+	"github.com/ollama/ollama/api"
+	"github.com/tmc/langchaingo/llms/ollama"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -24,6 +26,19 @@ var rootCmd = &cobra.Command{
 		if len(args) > 0 {
 			if args[0] == "readme" {
 				return readmeCmd.RunE(cmd, args[1:])
+			}
+			if args[0] == "dump-config" {
+				if len(args) > 1 {
+					filePath := args[1]
+					if err := config.Dump(filePath); err != nil {
+						return fmt.Errorf("failed to dump config: %w", err)
+					}
+				} else {
+					if err := config.Dump(); err != nil {
+						return fmt.Errorf("failed to dump config: %w", err)
+					}
+				}
+				return nil
 			}
 		}
 		return run(cmd, args)

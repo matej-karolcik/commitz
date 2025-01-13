@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/tmc/langchaingo/llms"
 )
@@ -23,9 +22,6 @@ const (
 
 Here is the git diff:
 `
-
-	summarizeFilePrompt  = "Summarize this file, the summary should be used to generate a readme in another prompt. Do not provide any comments or ask any questions. The summary should be short and it should state what the file does."
-	generateReadmePrompt = "Can you generate a readme.md from this list of file summaries?"
 )
 
 var _ AI = (*ollama)(nil)
@@ -55,58 +51,6 @@ func (o *ollama) CommitMessage(
 	)
 	if err != nil {
 		return "", fmt.Errorf("generating content: %w", err)
-	}
-
-	return response, nil
-}
-
-func (o *ollama) ReadmeFile(
-	ctx context.Context,
-	filemap map[string]string,
-) (string, error) {
-	var builder strings.Builder
-
-	summaries := make(map[string]string, len(filemap))
-	for file, content := range filemap {
-		summary, err := o.summarizeFile(ctx, file, content)
-		if err != nil {
-			return "", fmt.Errorf("summarizing file: %w", err)
-		}
-
-		summaries[file] = summary
-	}
-
-	for file, summary := range summaries {
-		builder.WriteString(fmt.Sprintf("\n\n// File: %s\n%s", file, summary))
-	}
-
-	response, err := o.ask(
-		ctx,
-		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeSystem, generateReadmePrompt),
-			llms.TextParts(llms.ChatMessageTypeHuman, builder.String()),
-		},
-	)
-	if err != nil {
-		return "", fmt.Errorf("asking llm: %w", err)
-	}
-
-	return response, nil
-}
-
-func (o *ollama) summarizeFile(
-	ctx context.Context,
-	filename, content string,
-) (string, error) {
-	response, err := o.ask(
-		ctx,
-		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeSystem, summarizeFilePrompt),
-			llms.TextParts(llms.ChatMessageTypeHuman, fmt.Sprintf("Filename: %s\nContent: %s\n\n", filename, content)),
-		},
-	)
-	if err != nil {
-		return "", fmt.Errorf("asking llm: %w", err)
 	}
 
 	return response, nil

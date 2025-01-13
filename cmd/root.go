@@ -8,46 +8,30 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/manifoldco/promptui"
 	"github.com/matej-karolcik/commitz/internal/ai"
-	"github.com/matej-karolcik/commitz/internal/config"
 	"github.com/matej-karolcik/commitz/internal/vcs"
 	"github.com/ollama/ollama/api"
-	"github.com/tmc/langchaingo/llms/ollama"
-
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+	"github.com/tmc/langchaingo/llms/ollama"
 )
+
+var (
+	prefix string
+)
+
+func init() {
+	rootCmd.PersistentFlags().StringVarP(&prefix, "prefix", "p", "", "Prefix for the commit message")
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "commitz",
 	Short: "A brief description of your application",
 	Long:  ``,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			if args[0] == "dump-config" {
-				if len(args) > 1 {
-					filePath := args[1]
-					if err := config.Dump(filePath); err != nil {
-						return fmt.Errorf("failed to dump config: %w", err)
-					}
-				} else {
-					if err := config.Dump(); err != nil {
-						return fmt.Errorf("failed to dump config: %w", err)
-					}
-				}
-				return nil
-			}
-		}
-		return run(cmd, args)
-	},
+	RunE:  run,
 }
 
-func run(_ *cobra.Command, args []string) error {
-	var prefix string
-	if len(args) > 0 {
-		prefix = args[0]
-	}
-
+func run(*cobra.Command, []string) error {
 	ctx, cancel := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGINT,

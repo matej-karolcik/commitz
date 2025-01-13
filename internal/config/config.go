@@ -2,79 +2,126 @@ package config
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 
+	"github.com/dgraph-io/badger/v4"
 	"github.com/mcuadros/go-defaults"
-	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Model       string  `yaml:"model" mapstructure:"model" default:"llama3.2"`
-	Temperature float64 `yaml:"temperature" mapstructure:"temperature" default:"0.5"`
+	Model       string  `default:"llama3.2"`
+	Temperature float64 `default:"0.5"`
 }
 
-func Load(path ...string) (*Config, error) {
-	viper.SetConfigType("yaml")
+func Load(paths ...string) (*Config, error) {
+	db, err := openDB(paths...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open badger: %w", err)
+	}
 
-	if len(path) == 0 {
-		viper.SetConfigName(".commitz")
-		workDir, err := os.Getwd()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get working directory: %w", err)
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Error("failed to close badger", "error", err)
 		}
-		viper.AddConfigPath(workDir)
-	} else {
-		viper.SetConfigFile(path[0])
+	}()
+
+	var (
+		model       string
+		temperature float64
+	)
+
+	if err := db.View(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte("model"))
+		if err != nil && err != badger.ErrKeyNotFound {
+			return fmt.Errorf("failed to get model: %w", err)
+		} else if err == nil {
+			if err := item.Value(func(val []byte) error {
+				model = string(val)
+				return nil
+			}); err != nil {
+				return fmt.Errorf("failed to get model: %w", err)
+			}
+		}
+
+		item, err = txn.Get([]byte("temperature"))
+		if err != nil && err != badger.ErrKeyNotFound {
+			return fmt.Errorf("failed to get temperature: %w", err)
+		} else if err == nil {
+			if err := item.Value(func(val []byte) error {
+				temperature, err = strconv.ParseFloat(string(val), 64)
+				if err != nil {
+					return fmt.Errorf("failed to parse temperature: %w", err)
+				}
+				return nil
+			}); err != nil {
+				return fmt.Errorf("failed to get temperature: %w", err)
+			}
+		}
+
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("failed to get config: %w", err)
 	}
 
-	_ = viper.ReadInConfig()
-
-	var config Config
-	if err := viper.Unmarshal(&config); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	config := Config{
+		Model:       model,
+		Temperature: temperature,
 	}
+
 	defaults.SetDefaults(&config)
 
 	return &config, nil
 }
 
-func Dump(path ...string) error {
-	config, err := Load(path...)
+func (c *Config) Save(paths ...string) error {
+	db, err := openDB(paths...)
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
+		return fmt.Errorf("failed to open badger: %w", err)
 	}
 
-	yamlData, err := yaml.Marshal(config)
-	if err != nil {
-		return fmt.Errorf("failed to marshal config: %w", err)
-	}
-
-	fmt.Println(string(yamlData))
-
-	var filePath string
-	if len(path) > 0 {
-		filePath = path[0]
-	} else {
-		filePath, err = getConfigFile()
-		if err != nil {
-			return fmt.Errorf("failed to get config file: %w", err)
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.Error("failed to close badger", "error", err)
 		}
-	}
+	}()
 
-	if err := os.WriteFile(filePath, yamlData, 0644); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
+	if err := db.Update(func(txn *badger.Txn) error {
+		if err := txn.Set([]byte("model"), []byte(c.Model)); err != nil {
+			return fmt.Errorf("failed to set model: %w", err)
+		}
+
+		if err := txn.Set([]byte("temperature"), []byte(strconv.FormatFloat(c.Temperature, 'f', -1, 64))); err != nil {
+			return fmt.Errorf("failed to set temperature: %w", err)
+		}
+
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
 	}
 
 	return nil
 }
 
-func getConfigFile() (string, error) {
-	workDir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get working directory: %w", err)
+func openDB(paths ...string) (*badger.DB, error) {
+	var path string
+	if len(paths) == 0 {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user home directory: %w", err)
+		}
+
+		path = filepath.Join(homeDir, ".commitz")
+	} else {
+		path = paths[0]
 	}
 
-	return filepath.Join(workDir, ".commitz.yaml"), nil
+	db, err := badger.Open(badger.DefaultOptions(path).WithLoggingLevel(badger.ERROR))
+	if err != nil {
+		return nil, fmt.Errorf("failed to open badger: %w", err)
+	}
+
+	return db, nil
 }

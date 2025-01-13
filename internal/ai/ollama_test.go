@@ -17,7 +17,7 @@ func TestGenerate(t *testing.T) {
 	assert.NoError(t, err)
 
 	commitMsg, err := ai.
-		NewOllama(llm).
+		NewOllama(llm, 0.5).
 		CommitMessage(context.Background(), string(diff))
 	assert.NoError(t, err)
 

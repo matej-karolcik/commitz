@@ -9,30 +9,28 @@ import (
 )
 
 const (
-	commitPrompt = `You are a Git commit message generator. Given the following Git diff, create a meaningful commit message that summarizes the changes made.
+	commitPrompt = `Given the git changes below, please draft a concise commit message that accurately summarizes the modifications. Follow these guidelines:
 
-- Provide a short summary of the most significant changes (ideally under 20 words).
-- Use lowercase.
-- Use present tense.
-- You must not include any feedback, suggestions, or code snippets.
-- Ideally there is only the first line.
-- Do not explain the 'why' behind these changes.
-- Do not show any code.
-- Tone: Keep it professional and clear.
+	1. Limit your commit message to 10 words.
+	2. The whole commit message should in lowercase, no uppercase characters are allowed.
+	3. Do not respond in Markdown
 
-Here is the git diff:
+	   Git Changes: 
+
 `
 )
 
 var _ AI = (*ollama)(nil)
 
 type ollama struct {
-	backend llms.Model
+	backend     llms.Model
+	temperature float64
 }
 
-func NewOllama(backend llms.Model) AI {
+func NewOllama(backend llms.Model, temperature float64) AI {
 	return &ollama{
-		backend: backend,
+		backend:     backend,
+		temperature: temperature,
 	}
 }
 
@@ -43,10 +41,10 @@ func (o *ollama) CommitMessage(
 	response, err := o.ask(
 		ctx,
 		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeSystem, commitPrompt),
-			llms.TextParts(llms.ChatMessageTypeHuman, diff),
+			llms.TextParts(llms.ChatMessageTypeSystem, systemPrompt),
+			llms.TextParts(llms.ChatMessageTypeHuman, commitPrompt+diff),
 		},
-		llms.WithTemperature(0.5),
+		llms.WithTemperature(o.temperature),
 		llms.WithMaxLength(20),
 	)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/manifoldco/promptui"
 	"github.com/matej-karolcik/commitz/internal/ai"
+	"github.com/matej-karolcik/commitz/internal/config"
 	"github.com/matej-karolcik/commitz/internal/vcs"
 	"github.com/ollama/ollama/api"
 	"github.com/spf13/cobra"
@@ -17,11 +18,13 @@ import (
 )
 
 var (
-	prefix string
+	prefix     string
+	configPath string
 )
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&prefix, "prefix", "p", "", "Prefix for the commit message")
+	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "Path to the config file")
 }
 
 var rootCmd = &cobra.Command{
@@ -39,6 +42,11 @@ func run(*cobra.Command, []string) error {
 	)
 	defer cancel()
 
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return fmt.Errorf("loading config: %w", err)
+	}
+
 	ollamaClient, err := api.ClientFromEnvironment()
 	if err != nil {
 		return fmt.Errorf("creating ollama client: %w", err)
@@ -49,7 +57,7 @@ func run(*cobra.Command, []string) error {
 		return fmt.Errorf("listing models: %w", err)
 	}
 
-	llm, err := ollama.New(ollama.WithModel("llama3.2"))
+	llm, err := ollama.New(ollama.WithModel(cfg.Model))
 	if err != nil {
 		return fmt.Errorf("creating ollama: %w", err)
 	}
@@ -65,7 +73,7 @@ func run(*cobra.Command, []string) error {
 		return errors.New("no changes to commit")
 	}
 
-	commitMsg, err := ai.NewOllama(llm).CommitMessage(
+	commitMsg, err := ai.NewOllama(llm, cfg.Temperature).CommitMessage(
 		ctx,
 		diff,
 	)

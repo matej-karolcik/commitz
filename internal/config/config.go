@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/mcuadros/go-defaults"
@@ -107,7 +108,7 @@ func (c *Config) Save(paths ...string) error {
 
 func openDB(paths ...string) (*badger.DB, error) {
 	var path string
-	if len(paths) == 0 {
+	if len(paths) == 0 || strings.TrimSpace(paths[0]) == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user home directory: %w", err)

@@ -27,8 +27,3 @@ Alternatively, you can also use commitz with a custom prefix like a ticket numbe
 ```bash
 commitz TICKET-123
 ```
-
-To generate a readme.md file, run the following command in the root of your project:
-```bash
-commitz readme
-```

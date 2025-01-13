@@ -24,9 +24,6 @@ var rootCmd = &cobra.Command{
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
-			if args[0] == "readme" {
-				return readmeCmd.RunE(cmd, args[1:])
-			}
 			if args[0] == "dump-config" {
 				if len(args) > 1 {
 					filePath := args[1]

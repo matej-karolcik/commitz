@@ -12,11 +12,12 @@ import (
 const (
 	commitPrompt = `You are a Git commit message generator. Given the following Git diff, create a meaningful commit message that summarizes the changes made.
 
-- Provide a short summary of the changes in the first line (ideally under 50 characters).
+- Provide a short summary of the most significant changes (ideally under 20 words).
+- Use present tense.
+- You must not include any feedback, suggestions, or code snippets.
 - Ideally there is only the first line.
 - Do not explain the 'why' behind these changes.
 - Do not show any code.
-- Use bullet points for multiple changes if necessary.
 - Tone: Keep it professional and clear.
 
 Here is the git diff:
@@ -45,7 +46,7 @@ func (o *ollama) CommitMessage(
 	response, err := o.ask(
 		ctx,
 		[]llms.MessageContent{
-			llms.TextParts(llms.ChatMessageTypeSystem, "Generate a concise one-line git commit message from the following `git diff` output. The message should not exceed 20 words and must not include any feedback, suggestions, or code snippets:"),
+			llms.TextParts(llms.ChatMessageTypeSystem, commitPrompt),
 			llms.TextParts(llms.ChatMessageTypeHuman, diff),
 		},
 		llms.WithTemperature(0.5),

@@ -11,11 +11,15 @@ import (
 const (
 	commitPrompt = `Given the git changes below, please draft a concise commit message that accurately summarizes the modifications. Follow these guidelines:
 
-	1. Limit your commit message to 10 words.
-	2. The whole commit message should in lowercase, no uppercase characters are allowed.
-	3. Do not respond in Markdown
+1. Be concise, with a strict limit of 10 words.
+2. Begin with an appropriate prefix indicating the type of change (e.g., feat: for new features, fix: for bug fixes, refactor: for code refactoring, chore: for routine tasks).
+3. You go deeper in the changes made and understand what changed.
+4. Never respond in markdown format.
+5. You give meaningful commit message.
+6. Never respond with anything else than the commit message.
+7. You must respond with a single line commit message.
 
-	   Git Changes: 
+Git Changes: 
 
 `
 )
@@ -45,7 +49,11 @@ func (o *ollama) CommitMessage(
 			llms.TextParts(llms.ChatMessageTypeHuman, commitPrompt+diff),
 		},
 		llms.WithTemperature(o.temperature),
-		llms.WithMaxLength(20),
+		llms.WithMaxLength(10),
+		// llms.WithTopK(1),
+		llms.WithTopP(0.2),
+		llms.WithFrequencyPenalty(2.0),
+		llms.WithPresencePenalty(2.0),
 	)
 	if err != nil {
 		return "", fmt.Errorf("generating content: %w", err)

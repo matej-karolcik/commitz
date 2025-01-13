@@ -3,7 +3,6 @@ module github.com/matej-karolcik/commitz
 go 1.23.4
 
 require (
-	github.com/gobwas/glob v0.2.3
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mcuadros/go-defaults v1.2.0
 	github.com/ollama/ollama v0.5.5

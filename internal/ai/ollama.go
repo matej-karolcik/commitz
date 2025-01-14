@@ -18,6 +18,9 @@ const (
 5. You give meaningful commit message.
 6. Never respond with anything else than the commit message.
 7. You must respond with a single line commit message.
+8. You must respond in lowercase.
+9. You must response in present tense.
+10. You must not provide any comments or explanations.
 
 Git Changes: 
 
@@ -51,9 +54,9 @@ func (o *ollama) CommitMessage(
 		llms.WithTemperature(o.temperature),
 		llms.WithMaxLength(10),
 		// llms.WithTopK(1),
-		llms.WithTopP(0.2),
+		llms.WithTopP(0.1),
 		llms.WithFrequencyPenalty(2.0),
-		llms.WithPresencePenalty(2.0),
+		// llms.WithPresencePenalty(2.0),
 	)
 	if err != nil {
 		return "", fmt.Errorf("generating content: %w", err)

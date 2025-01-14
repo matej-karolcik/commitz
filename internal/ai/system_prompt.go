@@ -9,6 +9,10 @@ The commit message should:
 4. Never respond in markdown format.
 5. You give meaningful commit message.
 6. Never respond with anything else than the commit message.
+7. You must respond in lowercase.
+8. You must response in present tense.
+9. You must not provide any comments or explanations.
+
 
 According to the following convientional commit guidelines:
 

@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -11,9 +12,14 @@ import (
 
 func TestGet(t *testing.T) {
 	_, file, _, _ := runtime.Caller(0)
-	config, err := config.Load(filepath.Join(filepath.Dir(file), "loaded.db"))
+	dbPath := filepath.Join(filepath.Dir(file), "loaded.db")
+	config, err := config.Load(dbPath)
 
 	assert.Nil(t, err)
+	defer func() {
+		_ = os.RemoveAll(dbPath)
+	}()
+
 	assert.Equal(t, config.Model, "llama3.2")
 	assert.Equal(t, config.Temperature, 0.5)
 }
@@ -26,11 +32,17 @@ func TestSaveAndLoad(t *testing.T) {
 		Temperature: 69.420,
 	}
 
-	err := cfg.Save(filepath.Join(filepath.Dir(file), "saved.db"))
+	dbPath := filepath.Join(filepath.Dir(file), "saved.db")
+	err := cfg.Save(dbPath)
 	assert.Nil(t, err)
 
-	cfg, err = config.Load(filepath.Join(filepath.Dir(file), "saved.db"))
+	cfg, err = config.Load(dbPath)
 	assert.Nil(t, err)
+
+	defer func() {
+		_ = os.RemoveAll(dbPath)
+	}()
+
 	assert.Equal(t, cfg.Model, "mistral")
 	assert.Equal(t, cfg.Temperature, 69.420)
 }

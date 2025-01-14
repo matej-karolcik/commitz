@@ -13,7 +13,7 @@ func TestGenerate(t *testing.T) {
 	diff, err := os.ReadFile("bigdiff.txt")
 	assert.NoError(t, err)
 
-	llm, err := ollama.New(ollama.WithModel("llama3.2"))
+	llm, err := ollama.New(ollama.WithModel("llama3.2"), ollama.WithRunnerNumCtx(8192))
 	assert.NoError(t, err)
 
 	commitMsg, err := ai.

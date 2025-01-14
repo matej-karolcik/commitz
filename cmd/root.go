@@ -57,7 +57,7 @@ func run(*cobra.Command, []string) error {
 		return fmt.Errorf("listing models: %w", err)
 	}
 
-	llm, err := ollama.New(ollama.WithModel(cfg.Model))
+	llm, err := ollama.New(ollama.WithModel(cfg.Model), ollama.WithRunnerNumCtx(8192))
 	if err != nil {
 		return fmt.Errorf("creating ollama: %w", err)
 	}
